@@ -7,42 +7,24 @@ import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.query.Query;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class UserDaoHibernateImpl implements UserDao {
-
+    Transaction transaction = null;
     private final SessionFactory sessionFactory = Util.getInstance().getSessionFactory();
 
     @Override
     public void createUsersTable() {
-        Session session = sessionFactory.openSession();
-        session.beginTransaction();
-        Query query = session.createSQLQuery("CREATE TABLE IF NOT EXISTS user" +
-                "(id BIGINT primary key auto_increment," + "name VARCHAR(45)," +
-                "lastname VARCHAR(45)," +
-                "age TINYINT)");
-        query.executeUpdate();
-        session.getTransaction().commit();
-        session.close();
-    }
-
-    @Override
-    public void dropUsersTable() {
-        Session session = sessionFactory.openSession();
-        session.beginTransaction();
-        session.createSQLQuery("DROP TABLE IF EXISTS user").executeUpdate();
-        session.getTransaction().commit();
-        session.close();
-    }
-
-    @Override
-    public void saveUser(String name, String lastName, byte age) {
-        Transaction transaction = null;
         try (Session session = sessionFactory.openSession()) {
             transaction = session.beginTransaction();
-            session.save(new User(name, lastName, age));
-            session.getTransaction().commit();
-            System.out.println("Пользователь " + name + " " + lastName + " " + age + " Добавлен в базу данных");
+            session.createSQLQuery("CREATE TABLE IF NOT EXISTS user (id BIGINT PRIMARY KEY AUTO_INCREMENT, " +
+                            "name VARCHAR(20), lastName VARCHAR(20), age TINYINT)")
+                    .executeUpdate();
+            transaction.commit();
+            System.out.println("Таблица создана");
+
         } catch (HibernateException e) {
             e.printStackTrace();
             if (transaction != null) {
@@ -52,12 +34,48 @@ public class UserDaoHibernateImpl implements UserDao {
     }
 
     @Override
+    public void dropUsersTable() {
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.createSQLQuery("DROP TABLE IF EXISTS user")
+                    .executeUpdate();
+            transaction.commit();
+            System.out.println("Таблица удалена");
+
+        } catch (HibernateException e) {
+            e.printStackTrace();
+            if (transaction != null) {
+                transaction.rollback();
+            }
+        }
+    }
+
+    @Override
+    public void saveUser(String name, String lastName, byte age) {
+        try (Session session = sessionFactory.openSession()) {
+            transaction = session.beginTransaction();
+            session.save(new User(name, lastName, age));
+            session.getTransaction().commit();
+            System.out.println("Пользователь " + name + " " + lastName + " " + age + " Добавлен в базу данных");
+
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
+            e.printStackTrace();
+        }
+    }
+
+    @Override
     public void removeUserById(long id) {
         try (Session session = sessionFactory.openSession()){
             session.beginTransaction();
             session.delete(session.get(User.class, id));
             session.getTransaction().commit();
-        }catch (Exception e) {
+        } catch (Exception e) {
+            if (transaction != null) {
+                transaction.rollback();
+            }
             e.printStackTrace();
         }
     }

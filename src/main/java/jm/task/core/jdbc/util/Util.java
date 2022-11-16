@@ -35,6 +35,8 @@ public class Util {
                 prop.put(environment.DIALECT, "org.hibernate.dialect.MySQL8Dialect");
                 prop.put(environment.SHOW_SQL, "true");
                 prop.put(environment.CURRENT_SESSION_CONTEXT_CLASS, "thread");
+                prop.put(Environment.HBM2DDL_AUTO, "create");
+                prop.put(Environment.AUTOCOMMIT,"off");
                 config.setProperties(prop);
                 config.addAnnotatedClass(User.class);
 
@@ -43,7 +45,7 @@ public class Util {
                 sessionFactory = config.buildSessionFactory(serviceRegistry);
 
             } catch (Throwable ex) {
-                System.err.println("Initial SessionFactory creation failed." + ex);
+                System.err.println("Ошибка создания SessionFactory" + ex);
                 throw new ExceptionInInitializerError(ex);
             }
         }
